@@ -8,14 +8,25 @@
         <maven.compiler.source>21</maven.compiler.source>
        <maven.compiler.target>21</maven.compiler.target>
      </properties>
-  
      <dependencies>
+		<!-- mybatis와 스프링 연동을 지원하는 라이브러리 -->
+		<dependency>
+		    <groupId>org.mybatis</groupId>
+		    <artifactId>mybatis-spring</artifactId>
+		    <version>3.0.4</version>
+		</dependency>
+		<!-- mybatis 라이브러리 -->
+		<dependency>
+		    <groupId>org.mybatis</groupId>
+		    <artifactId>mybatis</artifactId>
+		    <version>3.5.16</version>
+		</dependency>
         <!-- oracle jdbc Driver -->
-      <dependency>
-          <groupId>com.oracle.database.jdbc</groupId>
-          <artifactId>ojdbc11</artifactId>
-          <version>23.5.0.24.07</version>
-      </dependency>     
+		<dependency>
+		    <groupId>com.oracle.database.jdbc</groupId>
+		    <artifactId>ojdbc11</artifactId>
+		    <version>23.5.0.24.07</version>
+		</dependency>     
         <!-- jdbc 기술을 이용한 데이터베이스 엑세스를 지원하는 라이브러리-->
       <dependency>
           <groupId>org.springframework</groupId>
