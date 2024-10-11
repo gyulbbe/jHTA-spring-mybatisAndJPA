@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.jhta.mapper.BoardMapper">
+	
+	<!-- 1번 방법 -->
+	<select id="getAllBoards1" resultType="kr.co.jhta.vo.Board">
+		select
+			B.board_no as "no"
+			, B.board_title as "title"
+			, B.board_review_cnt as "reviewCnt"
+			, B.board_created_date as "createdDate"
+			, U.user_no as "user.no"
+			, U.user_id as "user.id"
+			, U.user_name as "user.name"
+		from
+			tb_boards B, tb_users U
+		where
+			B.user_no = U.user_no
+		order by
+			B.board_no desc
+	</select>
+	
+	<!-- 2번 방법 -->
+	<resultMap type="kr.co.jhta.vo.Board" id="boardResultMap2">
+		<id property="no" column="BOARD_NO" />
+		<result property="title" column="BOARD_TITLE" />
+		<result property="reviewCnt" column="BOARD_REVIEW_CNT" />
+		<result property="createdDate" column="BOARD_CREATED_DATE" />
+		<association property="user" javaType="kr.co.jhta.vo.User">
+			<id property="no" column="USER_NO" />
+			<result property="id" column="USER_ID" />
+			<result property="name" column="USER_NAME" />
+		</association>
+	</resultMap>
+	
+	<select id="getAllBoards2" resultMap="boardResultMap2">
+		select
+			B.board_no
+			, B.board_title
+			, B.board_review_cnt
+			, B.board_created_date
+			, U.user_no
+			, U.user_id
+			, U.user_name
+		from
+			tb_boards B, tb_users U
+		where
+			B.user_no = U.user_no
+		order by
+			B.board_no desc
+	</select>
+	
+	<!-- 3번 방법: 효율성이 떨어져서 추천하지 않는 방법 -->
+	<resultMap type="kr.co.jhta.vo.Board" id="boardResultMap3">
+		<id property="no" column="BOARD_NO" />
+		<result property="title" column="BOARD_TITLE" />
+		<result property="reviewCnt" column="BOARD_REVIEW_CNT" />
+		<result property="createdDate" column="BOARD_CREATED_DATE" />
+		<association property="user"
+			javaType="kr.co.jhta.vo.User"
+			column="USER_NO"
+			select="kr.co.jhta.mapper.UserMapper.getUserByNo" />
+	</resultMap>
+	
+	<select id="getAllBoards3" resultMap="boardResultMap3">
+		select
+			board_no
+			, board_title
+			, board_review_cnt
+			, board_created_date
+			, user_no
+		from
+			tb_boards
+		order by
+			board_no desc
+	</select>
+	
+	<!-- 
+		4번 방법: 한번에 board 한번 조회하고 review는 해당하는 갯수만큼 가져올 수 있음
+	 -->
+	
+	<resultMap type="kr.co.jhta.vo.Board" id="boardResultMap4">
+		<id property="no" column="BOARD_NO" />
+		<result property="title" column="BOARD_TITLE" />
+		<result property="content" column="BOARD_CONTENT" />
+		<result property="reviewCnt" column="BOARD_REVIEW_CNT" />
+		<result property="reviewPoint" column="BOARD_REVIEW_POINT" />
+		<result property="createdDate" column="BOARD_CREATED_DATE" />
+		<result property="updatedDate" column="BOARD_UPDATED_DATE" />
+		<association property="user" javaType="kr.co.jhta.vo.User">
+			<id property="no" column="USER_NO" />
+			<result property="id" column="USER_ID" />
+			<result property="name" column="USER_NAME" />
+		</association>
+		<collection property="reviews" ofType="kr.co.jhta.vo.Review">
+			<id property="no" column="review_no"/>
+			<result property="title" column="REVIEW_TITLE"/>
+			<result property="content" column="REVIEW_CONTENT"/>
+			<result property="createdDate" column="REVIEW_CREATED_DATE"/>
+		</collection>
+	</resultMap>
+	
+	<select id="getBoardByNo" resultMap="boardResultMap4">
+		select
+			b.board_no
+			, b.board_title
+			, b.board_content
+			, b.board_review_cnt
+			, b.board_created_date
+			, b.board_updated_date
+			, u.user_no
+			, u.user_id
+			, u.user_name
+			, r.review_no
+			, r.review_title
+			, r.review_content
+			, r.review_created_date
+		from
+			tb_boards b, tb_users u, tb_reviews r
+		where
+			b.board_no = #{no}
+			and b.user_no = u.user_no
+			and b.board_no = r.board_no
+		order by
+			r.review_no asc
+	</select>
+	
+	<!-- 
+		List<Board> searchBoards1(@Param("opt") String opt
+								  @Param("keyword") String keyword);
+								  
+		List<Board> boards = boardMapper.searchBoards1("title", "자바");
+		List<Board> boards = boardMapper.searchBoards1("content", "스프링");
+		List<Board> boards = boardMapper.searchBoards1("writer", "김유신");
+	 -->
+	<select id="searchBoards1" resultType="kr.co.jhta.vo.Board">
+		select
+			board_no as no
+			, board_title as title
+			, board_content as content
+			, board_created_date as createdDate
+		from
+			tb_boards
+		where
+			board_deleted = 'N'
+			<choose>
+				<when test="opt == 'title'">
+					and board_title like '%' || #{keyword} || '%'
+				</when>
+				<when test="opt == 'content'">
+					and board_content like '%' || #{keyword} || '%'
+				</when>
+				<when test="opt == 'writer'">
+					and user_no in (select user_no
+									from tb_users
+									where user_name = #{keyword})
+				</when>
+			</choose>
+			
+			
+			
+	</select>
+</mapper>
