@@ -2,6 +2,16 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="kr.co.jhta.mapper.UserMapper">
 	
+	<select id="searchUsers" resultType="kr.co.jhta.vo.User">
+		select
+			user_no as no
+			, user_id as id
+			, user_password as password
+			, user_email as email
+		from
+			tb_users
+		where ${col} = #{val}
+	</select>
 
 	<!-- 
 		resultMap
@@ -21,11 +31,36 @@
 		<result property="updatedDate" column="USER_UPDATED_DATE" />
 	</resultMap>
 
+	<!-- 
+		void insertUser(@Param("user") User user);
+	 -->
 	<insert id="insertUser">
-		insert into tb_users
-		(USER_NO, USER_ID, USER_PASSWORD, USER_NAME, USER_EMAIL)
+      <selectKey keyProperty="user.no" resultType="int" order="BEFORE">
+         select tb_users_seq.nextval 
+         from dual
+      </selectKey>
+      insert into tb_users
+      (user_no, user_id
+       , user_password
+       , user_name
+       , user_email)
+      values
+      (#{user.no}
+       , #{user.id}
+       , #{user.password}
+       , #{user.name}
+       , #{user.email})
+   </insert>
+	
+	<!-- 
+		void insertUserRole(@Param("no") int userNo,
+							@Param("rolename") String rolename)
+	 -->
+	<insert id="insertUserRole">
+		insert into tb_users_roles
+		(user_no, user_rolename)
 		values
-		(TB_USERS_SEQ.nextval, #{user.id}, #{user.password}, #{user.name}, #{user.email})
+		(#{no}, #{rolename})
 	</insert>
 	
 	<select id="getUserById" resultType="kr.co.jhta.vo.User">

@@ -2,6 +2,13 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="kr.co.jhta.mapper.BoardMapper">
 	
+	<insert id="insertBoard">
+		insert into tb_boards
+		(board_no, board_title, board_content, user_no)
+		values
+		(tb_boards_seq.nextval, #{board.title}, #{board.content,jdbcType=CLOB}, #{board.user.no})
+	</insert>
+	
 	<!-- 1번 방법 -->
 	<select id="getAllBoards1" resultType="kr.co.jhta.vo.Board">
 		select
@@ -126,6 +133,17 @@
 	</select>
 	
 	<!-- 
+		Map<String, Object> getBoardByNo2(@Param("no") int no);
+	 -->
+	<select id="getBoardByNo2" resultType="map">
+		select *
+		from tb_boards
+		where board_no = #{no}
+	</select>
+	
+	<!-- 
+		List<Board> searchBoard(@Param("title") String title, @Param("cnt") int reviewCnt);
+		
 		List<Board> searchBoards1(@Param("opt") String opt
 								  @Param("keyword") String keyword);
 								  
@@ -133,6 +151,38 @@
 		List<Board> boards = boardMapper.searchBoards1("content", "스프링");
 		List<Board> boards = boardMapper.searchBoards1("writer", "김유신");
 	 -->
+	 <select id="searchBoard" resultType="kr.co.jhta.vo.Board">
+	 	select
+			board_no as no
+			, board_title as title
+			, board_content as content
+			, board_created_date as createdDate
+		from
+			tb_boards
+		<where>
+			<if test="title != null">
+				board_title like '%' || #{title} || '%'
+			</if>
+			<if test="cnt > 0">
+				and board_review_cnt > #{cnt}
+			</if>
+			<if test="tags != null">
+				and board_no in (select board_no
+								 from tb_boards_tags
+								 where 
+								 	<foreach index="index"
+								 			 item="tag"
+								 			 collection="tags"
+								 			 open="board_tag in("
+								 			 separator=","
+								 			 close=")">
+								 		#{tag}
+								 	</foreach>
+								 )
+			</if>
+		</where>
+	 </select>
+	 
 	<select id="searchBoards1" resultType="kr.co.jhta.vo.Board">
 		select
 			board_no as no
@@ -156,8 +206,52 @@
 									where user_name = #{keyword})
 				</when>
 			</choose>
-			
-			
-			
+	</select>
+	
+	<select id="searchBoards2" resultType="kr.co.jhta.vo.Board">
+		select
+			board_no as no
+			, board_title as title
+			, board_review_cnt as reviewCnt
+			, board_created_date as createdDate
+		from (
+			select
+				board_no
+				, board_title
+				, board_review_cnt
+				, board_created_date
+				<choose>
+					<when test="condition.sort == '날짜순'">
+						, row_number() over (order by board_no desc) rn
+					</when>
+					<when test="condition.sort == '리뷰순'">
+						, row_number() over (order by board_review_cnt desc) rn
+					</when>
+					<when test="condition.sort == '평점순'">
+						, row_number() over (order by board_review_point desc) rn
+					</when>
+					<otherwise>
+						, row_number() over (order by board_no desc) rn
+					</otherwise>
+				</choose>
+			from
+				tb_boards
+			<where>
+				<choose>
+					<when test="condition.opt == '제목'">
+						board_title like '%' || #{condition.keyword} || '%'
+					</when>
+					<when test="condition.opt == '내용'">
+						board_title like '%' || #{condition.keyword} || '%'
+					</when>
+					<when test="condition.opt == '작성자'">
+						user_no in (select user_no
+									from tb_users
+									where user_name = #{condition.keyword})
+					</when>
+				</choose>
+			</where>
+		)
+		where rn between #{condition.begin} and #{condition.end}
 	</select>
 </mapper>
